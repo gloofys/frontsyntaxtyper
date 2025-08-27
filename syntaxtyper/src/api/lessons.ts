@@ -1,13 +1,15 @@
 
-import js1 from "@/data/lessons/JavaScript/1-print-and-strings";
-import react1 from "@/data/lessons/react/1";
+import axios from "axios";
 
-export type Lesson = typeof js1;
+const API_URL = "http://localhost:3000/api/lessons";
 
-export function listLanguages() { return ["javascript", "react"]; }
-
-export function listLessons(lang: string): Lesson[] {
-    if (lang === "javascript") return [js1];
-    if (lang === "react") return [react1];
-    return [];
-}
+export const fetchLesson = async (language: string, lessonId: string) => {
+    try {
+        const url = `${API_URL}/${language}/${lessonId}`;
+        const response = await axios.get(url);
+        return response.data;
+    } catch (error) {
+        console.error("Error fetching lesson", error);
+        return null;
+    }
+};
