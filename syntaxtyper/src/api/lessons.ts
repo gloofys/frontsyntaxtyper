@@ -1,15 +1,14 @@
-
-import axios from "axios";
-
-const API_URL = "http://localhost:3000/api/lessons";
+// src/api/lessons.ts
 
 export const fetchLesson = async (language: string, lessonId: string) => {
     try {
-        const url = `${API_URL}/${language}/${lessonId}`;
-        const response = await axios.get(url);
-        return response.data;
+        // Dynamically import only the requested lesson file
+        const lesson = await import(
+            `../data/lessons/${language}/${lessonId}.ts`
+            );
+        return lesson.default;
     } catch (error) {
-        console.error("Error fetching lesson", error);
+        console.error(`❌ Failed to load lesson: ${language}/${lessonId}`, error);
         return null;
     }
 };
