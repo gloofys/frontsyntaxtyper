@@ -1,4 +1,4 @@
-import { Lesson } from "../../types";
+import type {Lesson} from "../Lesson.ts";
 
 const lesson6: Lesson = {
     lessonId: 6,

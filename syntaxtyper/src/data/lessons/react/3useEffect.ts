@@ -1,5 +1,5 @@
 // src/data/lesson3.ts
-import { Lesson } from "../../types";
+import type {Lesson} from "../Lesson.ts";
 
 const lesson3: Lesson = {
     lessonId: 3,

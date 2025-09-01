@@ -1,12 +1,12 @@
-import {Lesson} from "../../types";
+import type {Lesson} from "../Lesson.ts";
 
 const lesson: Lesson = {
     lessonId: 1,
     language: "java",
     title: "Introduction to Java",
     steps: [
-        { title: "Introduction", description: "Welcome to Java Lesson 1." },
-        { title: "Setup", description: "Learn how to set up Java." }
+        {title: "Introduction", description: "Welcome to Java Lesson 1."},
+        {title: "Setup", description: "Learn how to set up Java."}
     ]
 };
 

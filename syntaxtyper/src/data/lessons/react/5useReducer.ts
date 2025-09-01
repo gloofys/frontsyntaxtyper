@@ -1,5 +1,4 @@
-import { Lesson } from "../../types";
-
+import type {Lesson} from "../Lesson.ts";
 const lesson5: Lesson = {
     lessonId: 5,
     language: "react",

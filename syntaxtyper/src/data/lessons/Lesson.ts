@@ -1,3 +1,7 @@
+// src/data/lessons/Lesson.ts
+export type Industry = "general" | "construction" | "finance";
+export type ByIndustry<T> = Partial<Record<Industry, T>>;
+
 export interface QuizQuestion {
     question: string;
     options: string[];
@@ -6,13 +10,24 @@ export interface QuizQuestion {
 
 export interface Step {
     title: string;
-    description: string;
+    description?: string;
+    descriptionByIndustry?: ByIndustry<string>;
+
     bullets?: string[];
+    bulletsByIndustry?: ByIndustry<string[]>;
+
     outro?: string;
     type?: string;
+
     questions?: QuizQuestion[];
+    questionsByIndustry?: ByIndustry<QuizQuestion[]>;
+
     codeSnippet?: string;
+    codeSnippetByIndustry?: ByIndustry<string>;
+
     codeLines?: string[];
+    codeLinesByIndustry?: ByIndustry<string[]>;
+
     blankLines?: number[];
     exampleKey?: string;
 }
