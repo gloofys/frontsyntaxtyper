@@ -6,10 +6,16 @@ import TypingBoxWithBlanks from "../components/TypingBoxWithBlanks.tsx";
 import Quiz from "../components/Quiz.tsx";
 import { ExplanationPanel } from "../components/ExplanationPanel.tsx";
 import Progress from "../components/Progress.tsx";
+
 import { useLessonStore } from "../context/LessonContext";
 import { useIndustry } from "../context/IndustryContext";
+
 import { pickByIndustry } from "../utils/industry";
 import type { Lesson, Step, Industry } from "../data/lessons/Lesson";
+
+// ⬇️ make sure these exist as discussed
+import { overridesRegistry } from "../data/lessons/_overrides";
+import { applyOverrides } from "../data/lessons/_utils/composeLesson";
 
 const LessonDetail: React.FC = () => {
     const { language, lessonId } = useParams<{ language: string; lessonId: string }>();
@@ -25,7 +31,7 @@ const LessonDetail: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    // Fetch lesson ONCE per language/lessonId
+    // Load the base lesson (once per language/lessonId)
     useEffect(() => {
         const loadLesson = async () => {
             try {
@@ -44,10 +50,26 @@ const LessonDetail: React.FC = () => {
         loadLesson();
     }, [selectedLanguage, lessonNumber, fetchLessons, getLessonById]);
 
-    // Recompute the current step resolved for industry
+    // 1) Select per-lesson overrides based on industry
+    const resolvedLesson = useMemo(() => {
+        if (!lessonData) return null;
+        const key = `${selectedLanguage}:${lessonNumber}`; // e.g. "react:4"
+        const perLesson = overridesRegistry[key];
+        const ov =
+            industry === "finance"
+                ? perLesson?.finance
+                : industry === "construction"
+                    ? perLesson?.construction
+                    : perLesson?.general; // can be undefined
+
+        return applyOverrides(lessonData, ov);
+        // lessonData is the base; ov is partial lesson overrides
+    }, [lessonData, selectedLanguage, lessonNumber, industry]);
+
+    // 2) (Optional) Resolve any remaining per-field ...ByIndustry in the selected step
     const resolvedStep = useMemo(() => {
-        if (!lessonData) return undefined;
-        const base = lessonData.steps[currentStep - 1];
+        if (!resolvedLesson) return undefined;
+        const base = resolvedLesson.steps[currentStep - 1];
         if (!base) return undefined;
 
         const resolve = <T,>(baseVal: T | undefined, map: any, ind: Industry) =>
@@ -55,17 +77,19 @@ const LessonDetail: React.FC = () => {
 
         return {
             ...base,
-            description: resolve(base.description, base.descriptionByIndustry, industry),
-            bullets: resolve(base.bullets, base.bulletsByIndustry, industry) ?? [],
-            questions: resolve(base.questions, base.questionsByIndustry, industry) ?? base.questions,
-            codeSnippet: resolve(base.codeSnippet, base.codeSnippetByIndustry, industry),
-            codeLines: resolve(base.codeLines, base.codeLinesByIndustry, industry) ?? base.codeLines,
+            description: resolve(base.description, (base as any).descriptionByIndustry, industry),
+            bullets: resolve(base.bullets, (base as any).bulletsByIndustry, industry) ?? base.bullets,
+            questions: resolve(base.questions, (base as any).questionsByIndustry, industry) ?? base.questions,
+            codeSnippet: resolve(base.codeSnippet, (base as any).codeSnippetByIndustry, industry),
+            codeLines: resolve(base.codeLines, (base as any).codeLinesByIndustry, industry) ?? base.codeLines,
         } as Step;
-    }, [lessonData, currentStep, industry]);
+    }, [resolvedLesson, currentStep, industry]);
+
+    const totalSteps = resolvedLesson?.steps.length ?? 0;
 
     const handleNext = () => {
-        if (!lessonData) return;
-        if (currentStep < lessonData.steps.length) setCurrentStep((p) => p + 1);
+        if (!resolvedLesson) return;
+        if (currentStep < totalSteps) setCurrentStep((p) => p + 1);
         else {
             navigate("/congratulations", {
                 state: {
@@ -76,11 +100,12 @@ const LessonDetail: React.FC = () => {
             });
         }
     };
+
     const handlePrev = () => currentStep > 1 && setCurrentStep((p) => p - 1);
 
     if (loading) return <div>Loading lesson...</div>;
     if (error) return <div className="text-red-500">Error: {error}</div>;
-    if (!lessonData || !lessonData.steps?.length) return <div>No lesson data available.</div>;
+    if (!resolvedLesson || totalSteps === 0) return <div>No lesson data available.</div>;
     if (!resolvedStep) return <div>Step not found for this lesson.</div>;
 
     const renderStepContent = (step: Step) => {
@@ -149,9 +174,9 @@ const LessonDetail: React.FC = () => {
                         {selectedLanguage.toUpperCase()} Lesson {lessonNumber}
                     </h2>
                     <p className="text-gray-600">
-                        Step {currentStep} of {lessonData.steps.length}
+                        Step {currentStep} of {totalSteps}
                     </p>
-                    <Progress value={currentStep} max={lessonData.steps.length} showPercentage heightClass="h-2" />
+                    <Progress value={currentStep} max={totalSteps} showPercentage heightClass="h-2" />
                 </header>
 
                 <main
@@ -169,7 +194,7 @@ const LessonDetail: React.FC = () => {
                         Previous
                     </button>
                     <button onClick={handleNext} className="px-4 py-2 bg-blue-500 text-white rounded-md">
-                        {currentStep === lessonData.steps.length ? "Finish" : "Next"}
+                        {currentStep === totalSteps ? "Finish" : "Next"}
                     </button>
                 </footer>
             </div>

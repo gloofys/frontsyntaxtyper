@@ -1,5 +1,4 @@
 // src/data/lessons/Lesson.ts
-export type Industry = "general" | "construction" | "finance";
 export type ByIndustry<T> = Partial<Record<Industry, T>>;
 
 export interface QuizQuestion {
@@ -37,4 +36,11 @@ export interface Lesson {
     language: string;
     title: string;
     steps: Step[];
+}
+
+export type Industry = "general" | "construction" | "finance";
+export type StepOverride = Partial<Step>;
+export interface LessonOverrides {
+    // 1-based step number → partial step fields to override
+    steps: Record<number, StepOverride>;
 }
