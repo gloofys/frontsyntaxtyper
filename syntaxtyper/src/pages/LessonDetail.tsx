@@ -1,30 +1,30 @@
 // src/pages/LessonDetail.tsx
-import React, { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, {useEffect, useState, useMemo, useCallback} from "react";
+import {useParams, useNavigate} from "react-router-dom";
 import TypingBox from "../components/Typingbox.tsx";
 import TypingBoxWithBlanks from "../components/TypingBoxWithBlanks.tsx";
 import Quiz from "../components/Quiz.tsx";
-import { ExplanationPanel } from "../components/ExplanationPanel.tsx";
+import {ExplanationPanel} from "../components/ExplanationPanel.tsx";
 import Progress from "../components/Progress.tsx";
 
-import { useLessonStore } from "../context/LessonContext";
-import { useIndustry } from "../context/IndustryContext";
+import {useLessonStore} from "../context/LessonContext";
+import {useIndustry} from "../context/IndustryContext";
 
-import { pickByIndustry } from "../utils/industry";
-import type { Lesson, Step, Industry } from "../data/lessons/Lesson";
+import {pickByIndustry} from "../utils/industry";
+import type {Lesson, Step, Industry} from "../data/lessons/Lesson";
 
 // ⬇️ make sure these exist as discussed
-import { overridesRegistry } from "../data/lessons/_overrides";
-import { applyOverrides } from "../data/lessons/_utils/composeLesson";
+import {overridesRegistry} from "../data/lessons/_overrides";
+import {applyOverrides} from "../data/lessons/_utils/composeLesson";
 
 const LessonDetail: React.FC = () => {
-    const { language, lessonId } = useParams<{ language: string; lessonId: string }>();
+    const {language, lessonId} = useParams<{ language: string; lessonId: string }>();
     const selectedLanguage = language?.toLowerCase() || "react";
     const lessonNumber = Number(lessonId);
     const navigate = useNavigate();
 
-    const { fetchLessons, getLessonById, getLessonsByLanguage } = useLessonStore();
-    const { industry } = useIndustry();
+    const {fetchLessons, getLessonById, getLessonsByLanguage} = useLessonStore();
+    const {industry} = useIndustry();
 
     const [lessonData, setLessonData] = useState<Lesson | null>(null);
     const [currentStep, setCurrentStep] = useState(1);
@@ -72,7 +72,7 @@ const LessonDetail: React.FC = () => {
         const base = resolvedLesson.steps[currentStep - 1];
         if (!base) return undefined;
 
-        const resolve = <T,>(baseVal: T | undefined, map: any, ind: Industry) =>
+        const resolve = <T, >(baseVal: T | undefined, map: any, ind: Industry) =>
             pickByIndustry<T>(baseVal, map, ind);
 
         return {
@@ -87,7 +87,7 @@ const LessonDetail: React.FC = () => {
 
     const totalSteps = resolvedLesson?.steps.length ?? 0;
 
-    const handleNext = () => {
+    const handleNext = useCallback(() => {
         if (!resolvedLesson) return;
         if (currentStep < totalSteps) setCurrentStep((p) => p + 1);
         else {
@@ -99,9 +99,44 @@ const LessonDetail: React.FC = () => {
                 },
             });
         }
-    };
+    }, [resolvedLesson, currentStep, totalSteps, navigate, lessonNumber, selectedLanguage, getLessonsByLanguage]);
 
-    const handlePrev = () => currentStep > 1 && setCurrentStep((p) => p - 1);
+    const handlePrev = useCallback(() => {
+        if (currentStep > 1) setCurrentStep((p) => p - 1);
+    }, [currentStep]);
+
+    const shouldIgnoreArrows = useCallback(() => {
+        const el = (document.activeElement as HTMLElement) || null;
+        if (!el) return false;
+
+        const tag = el.tagName.toLowerCase();
+        if (tag === "input" || tag === "textarea" || tag === "select") return true;
+        if (el.isContentEditable) return true;
+        if (el.getAttribute("role") === "textbox") return true;
+
+        // optional: if you have any custom editors, add a data-flag and check it here
+        // if (el.closest("[data-capture-arrows='true']")) return true;
+
+        return false;
+    }, []);
+
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            // 🔒 ignore when user is typing or a form control is focused
+            if (shouldIgnoreArrows()) return;
+
+            if (e.key === "ArrowRight") {
+                e.preventDefault();
+                handleNext();
+            } else if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                handlePrev();
+            }
+        };
+
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [handleNext, handlePrev, shouldIgnoreArrows]);
 
     if (loading) return <div>Loading lesson...</div>;
     if (error) return <div className="text-red-500">Error: {error}</div>;
@@ -139,7 +174,7 @@ const LessonDetail: React.FC = () => {
                     <div>
                         <h3 className="text-xl font-bold">{step.title}</h3>
                         <p className="mt-2 mb-4">{step.description}</p>
-                        <Quiz questions={step.questions || []} onComplete={handleNext} />
+                        <Quiz questions={step.questions || []} onComplete={handleNext}/>
                     </div>
                 );
             case "explanation":
@@ -176,13 +211,13 @@ const LessonDetail: React.FC = () => {
                     <p className="text-gray-600">
                         Step {currentStep} of {totalSteps}
                     </p>
-                    <Progress value={currentStep} max={totalSteps} showPercentage heightClass="h-2" />
+                    <Progress value={currentStep} max={totalSteps} showPercentage heightClass="h-2"/>
                 </header>
 
                 <main
                     className={[
-                        "flex-1","overflow-y-auto","p-4",
-                        !["explanation","typingChallenge","typingChallengeWithBlanks"].includes(resolvedStep?.type ?? "") &&
+                        "flex-1", "overflow-y-auto", "p-4",
+                        !["explanation", "typingChallenge", "typingChallengeWithBlanks"].includes(resolvedStep?.type ?? "") &&
                         "grid place-content-center",
                     ].filter(Boolean).join(" ")}
                 >
@@ -190,10 +225,14 @@ const LessonDetail: React.FC = () => {
                 </main>
 
                 <footer className="p-4 border-t flex justify-between">
-                    <button onClick={handlePrev} disabled={currentStep === 1} className="px-4 py-2 bg-gray-300 rounded-md disabled:opacity-50">
+                    <button onClick={handlePrev} disabled={currentStep === 1} aria-keyshortcuts="ArrowLeft"
+                            title="Previous (←)"
+                            className="px-4 py-2 bg-gray-300 rounded-md disabled:opacity-50">
                         Previous
                     </button>
-                    <button onClick={handleNext} className="px-4 py-2 bg-blue-500 text-white rounded-md">
+                    <button onClick={handleNext} aria-keyshortcuts="ArrowRight"
+                            title="Next (→)"
+                            className="px-4 py-2 bg-blue-500 text-white rounded-md">
                         {currentStep === totalSteps ? "Finish" : "Next"}
                     </button>
                 </footer>

@@ -1,1 +1,6 @@
-BUG - changing language while being in /lesson wont change the lessonspage to the new language lessons. Same with challenges.
+If you ever want to allow arrows in a specific widget, wrap it in a container like:
+
+<div data-capture-arrows="true"> ... </div>
+
+
+and uncomment that closest() line in the guard.
