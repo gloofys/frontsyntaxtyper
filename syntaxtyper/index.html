@@ -1,5 +1,13 @@
 <!doctype html>
 <html lang="en">
+<script>
+  (() => {
+    const stored = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDark = stored === "dark" || (stored !== "light" && prefersDark);
+    document.documentElement.classList.toggle("dark", isDark);
+  })();
+</script>
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="" />
@@ -9,5 +17,15 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+<!--    <script>-->
+<!--      (() => {-->
+<!--        const key = "theme"; // 'light' | 'dark' | 'system'-->
+<!--        const stored = localStorage.getItem(key);-->
+<!--        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;-->
+<!--        const isDark = stored === "dark" || (stored !== "light" && prefersDark);-->
+<!--        if (isDark) document.documentElement.classList.add("dark");-->
+<!--      })();-->
+<!--    </script>-->
+
   </body>
 </html>

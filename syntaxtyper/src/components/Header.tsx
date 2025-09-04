@@ -2,6 +2,7 @@
 import React from "react";
 import {Link, useLocation, useNavigate, matchPath} from "react-router-dom";
 import {useIndustry} from "../context/IndustryContext";
+import ThemeToggle from "./ThemeToggle.tsx";
 
 
 const Header: React.FC = () => {
@@ -68,6 +69,7 @@ const Header: React.FC = () => {
                 <option value="construction">Construction</option>
                 <option value="finance">Finance</option>
             </select>
+            <ThemeToggle />
         </header>
     );
 };

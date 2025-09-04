@@ -4,3 +4,6 @@ If you ever want to allow arrows in a specific widget, wrap it in a container li
 
 
 and uncomment that closest() line in the guard.
+
+
+!!!CHeck app.tsx header selectedlanguage
